@@ -150,7 +150,7 @@ class PDFConsole(cmd.Cmd):
             size = int(args[1])
             ret = getBytesFromFile(self.pdfFile.getPath(), offset, size, self.pdfFile.pdfData, self.pdfFile.pdfOffset)
             if ret[0] == -1:
-                message = '*** Error: The file does not exist!!'
+                message = '*** Error: %s' %(ret[1])
                 self.log_output('bytes ' + argv, message)
                 return False
             bytes = ret[1]

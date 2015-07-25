@@ -293,6 +293,8 @@ def getBytesFromFile(filename, offset, numBytes, pdfData=None, pdfOffset=None):
     if not isinstance(offset, int) or not isinstance(numBytes, int):
         return (-1, 'The offset and the number of bytes must be integers')
     if pdfData is not None and pdfOffset is not None:
+        if offset < pdfOffset:
+            return (-1, 'PDF starts at %d. The offset should be  greater than %d.' %(pdfOffset, pdfOffset))
         offset = offset - pdfOffset
         return (0, pdfData[offset:offset+numBytes])
     if os.path.exists(filename):

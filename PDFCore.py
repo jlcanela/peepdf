@@ -4862,6 +4862,7 @@ class PDFFile:
         self.binary = False
         self.binaryChars = ''
         self.linearized = False
+        self.xdp= False
         self.encryptDict = None
         self.encrypted = False
         self.fileId = ''
@@ -6735,6 +6736,7 @@ class PDFFile:
         stats['Score'] = self.score
         stats['Version'] = self.version
         stats['Binary'] = str(self.binary)
+        stats['XDP'] = str(self.xdp)
         stats['Linearized'] = str(self.linearized)
         stats['Encrypted'] = str(self.encrypted)
         stats['Encryption Algorithms'] = self.encryptionAlgorithms
@@ -7550,6 +7552,7 @@ class PDFParser:
             if pdfEncoded:
                 pdfData = pdfEncoded.group(1).decode('base64')
                 pdfOffset = pdfEncoded.start(1)
+                pdfFile.xdp = True
         pdfFile.pdfData = pdfData
         pdfFile.pdfOffset = pdfOffset
         headerOffset += pdfFile.pdfOffset

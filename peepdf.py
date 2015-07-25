@@ -111,6 +111,7 @@ def getPeepXML(statsDict, version, revision):
     version.text = statsDict['Version']
     binary = etree.SubElement(basicInfo, 'binary', status=statsDict['Binary'].lower())
     linearized = etree.SubElement(basicInfo, 'linearized', status=statsDict['Linearized'].lower())
+    xdp = etree.SubElement(basicInfo, 'xdp', status=statsDict['XDP'].lower())
     encrypted = etree.SubElement(basicInfo, 'encrypted', status=statsDict['Encrypted'].lower())
     if statsDict['Encryption Algorithms'] != []:
         algorithms = etree.SubElement(encrypted, 'algorithms')
@@ -481,6 +482,7 @@ try:
                     stats += beforeStaticLabel + 'Maliciousness Score: ' + scoreColor + str(score) + resetColor + newLine
                     stats += beforeStaticLabel + 'Version: ' + resetColor + statsDict['Version'] + newLine
                     stats += beforeStaticLabel + 'Binary: ' + resetColor + statsDict['Binary'] + newLine
+                    stats += beforeStaticLabel + 'XDP: ' + resetColor + statsDict['XDP'] + newLine
                     stats += beforeStaticLabel + 'Linearized: ' + resetColor + statsDict['Linearized'] + newLine
                     stats += beforeStaticLabel + 'Encrypted: ' + resetColor + statsDict['Encrypted']
                     if statsDict['Encryption Algorithms'] != []:

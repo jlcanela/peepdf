@@ -281,7 +281,7 @@ def getBytesFromBits(bitsStream):
         return (-1, 'The format of the bit stream is not correct')
 
 
-def getBytesFromFile(filename, offset, numBytes):
+def getBytesFromFile(filename, offset, numBytes, pdfData=None, pdfOffset=None):
     '''
         Returns the number of bytes specified from a file, starting from the offset specified
 
@@ -292,6 +292,9 @@ def getBytesFromFile(filename, offset, numBytes):
         '''
     if not isinstance(offset, int) or not isinstance(numBytes, int):
         return (-1, 'The offset and the number of bytes must be integers')
+    if pdfData is not None and pdfOffset is not None:
+        offset = offset - pdfOffset
+        return (0, pdfData[offset:offset+numBytes])
     if os.path.exists(filename):
         fileSize = os.path.getsize(filename)
         bytesFile = open(filename, 'rb')

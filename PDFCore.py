@@ -4847,6 +4847,9 @@ class PDFFile:
 
     def __init__(self):
         self.fileName = ''
+        self.fileContent = ''
+        self.pdfData = ''
+        self.pdfOffset = 0
         self.path = ''
         self.size = 0
         self.md5 = ''
@@ -5768,8 +5771,7 @@ class PDFFile:
         offsetList = sorted(offsetList, key=itemgetter(2))
         garbageList = []
         spaceGapList = []
-        f = open(self.path, 'rb')
-        rawFile = f.read()
+        rawFile = self.pdfData
         for index, offset in enumerate(offsetList):
             if index == 0 or offset[1] == 'header' or offsetList[index - 1][1] == 'header':
                 continue
@@ -5779,7 +5781,7 @@ class PDFFile:
             for x in spacesChars:
                 schars = schars + x
             if abs(offset[3] - offsetList[index + 1][2]) > MAX_OBJ_GAP:
-                rawData = rawFile[offset[3] + 2:offsetList[index + 1][2]]  # compensation(+2) for small offset bug
+                rawData = rawFile[offset[3] + 2 - pdfFile.pdfOffset:offsetList[index + 1][2]- pdfFile.pdfOffset]  # compensation(+2) for small offset bug
                 data = rawData.translate(None, schars)
                 if data.isspace() or data == '':
                     # Ignore for small whitespace(<20) after eof.(made by some pdf producers)
@@ -7476,7 +7478,7 @@ class PDFFile:
                         objectOffset = objectEntry.getObjectOffset()
                         if (objectId not in realObjectOffsets.keys() and not self.linearized)  or\
                                 (objectId in realObjectOffsets.keys() and\
-                                 abs(realObjectOffsets[objectId] - objectOffset) > 4):
+                                 abs((realObjectOffsets[objectId] - pdfFile.pdfOffset) - objectOffset) > 4):
                             self.brokenXref = True
                 if not self.linearized:
                     xrefList = xrefObjectList
@@ -7538,7 +7540,19 @@ class PDFParser:
 
         # Reading the file header
         file = open(fileName, 'rbU')
-        for line in file:
+        fileData = file.read()
+        pdfFile.fileContent = fileData
+        pdfData = fileData
+        pdfOffset = 0
+        if fileData.find('<xdp:') != -1 and fileData.find('<?xml') != -1 and fileData.find('<pdf') != -1:
+            pdfEncoded = re.search('<pdf.*?>\s*<document>\s*<chunk>\s*(.*)\s*</chunk>\s*</document>\s*</pdf>', fileData, re.DOTALL)
+            if pdfEncoded:
+                pdfData = pdfEncoded.group(1).decode('base64')
+                pdfOffset = pdfEncoded.start(1)
+        pdfFile.pdfData = pdfData
+        pdfFile.pdfOffset = pdfOffset
+        headerOffset += pdfFile.pdfOffset
+        for line in pdfData.splitlines():
             if versionLine == '':
                 pdfHeaderIndex = line.find('%PDF-')
                 psHeaderIndex = line.find('%!PS-Adobe-')
@@ -7561,7 +7575,7 @@ class PDFParser:
             else:
                 binaryLine = line
                 break
-            headerOffset += len(line)
+            headerOffset += len(line) + 1
         file.close()
         # Getting the specification version
         versionLine = versionLine.replace('\r', '')
@@ -7606,12 +7620,12 @@ class PDFParser:
         if pdfFile.binary and len(binaryLine) > MAX_HEAD_BIN_LEN:
             pdfFile.largeBinaryHeader = True
         # Reading the rest of the file
-        fileContent = open(fileName, 'rb').read()
+        fileContent = pdfFile.fileContent
         pdfFile.setSize(len(fileContent))
         pdfFile.setMD5(hashlib.md5(fileContent).hexdigest())
         pdfFile.setSHA1(hashlib.sha1(fileContent).hexdigest())
         pdfFile.setSHA256(hashlib.sha256(fileContent).hexdigest())
-
+        fileContent = pdfFile.pdfData
         # Getting the number of updates in the file
         while fileContent.find('%%EOF') != -1:
             self.readUntilSymbol(fileContent, '%%EOF')
@@ -7638,7 +7652,7 @@ class PDFParser:
         pdfFile.setUpdates(len(self.fileParts) - 1)
 
         # Getting the body, cross reference table and trailer of each part of the file
-        bodyOffset = 0
+        bodyOffset = pdfFile.pdfOffset
         for i in range(len(self.fileParts)):
             xrefOffset = 0
             trailerOffset = 0
@@ -7659,7 +7673,7 @@ class PDFParser:
                 fileId = None
             content = self.fileParts[i]
             if i == 0:
-                bodyOffset = 0
+                bodyOffset = pdfFile.pdfOffset
             else:
                 bodyOffset += len(self.fileParts[i - 1])
             # Getting the content for each section
